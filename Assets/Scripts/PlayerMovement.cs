@@ -14,6 +14,31 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
+
+        string selectedClass =
+            PlayerPrefs.GetString("SelectedClass", "Normal");
+
+        switch (selectedClass)
+        {
+            case "Runner":
+                moveSpeed = 8f;
+                break;
+
+            case "Normal":
+                moveSpeed = 6f;
+                break;
+
+            case "Tank":
+                moveSpeed = 4f;
+                break;
+        }
+
+        if (PlayerPrefs.GetInt("SpeedJumpUnlocked", 0) == 1)
+        {
+            moveSpeed = 20f;
+            jumpHeight = 8f;
+        }
+
     }
 
     void Update()

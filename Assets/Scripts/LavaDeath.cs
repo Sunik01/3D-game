@@ -17,7 +17,7 @@ public class LavaDeath : MonoBehaviour
 
         if (health != null)
         {
-            health.TakeDamage(health.currentHealth);
+            health.Kill();
         }
     }
 }

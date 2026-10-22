@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
+
 {
     [Header("Health Settings")]
     public int maxHealth = 100;
@@ -16,13 +17,36 @@ public class PlayerHealth : MonoBehaviour
 
     void Start()
     {
-        currentHealth = maxHealth;
         Time.timeScale = 1f;
+
+        string selectedClass =
+            PlayerPrefs.GetString("SelectedClass", "Normal");
+
+        switch (selectedClass)
+        {
+            case "Runner":
+                maxHealth = 75;
+                break;
+
+            case "Normal":
+                maxHealth = 100;
+                break;
+
+            case "Tank":
+                maxHealth = 160;
+                break;
+        }
+
+        currentHealth = maxHealth;
     }
 
     public void TakeDamage(int damage)
     {
         if (isDead) return;
+
+        // GODMODE: ป้องกันความเสียหายทั่วไป
+        if (PlayerPrefs.GetInt("GodModeUnlocked", 0) == 1)
+            return;
 
         currentHealth = Mathf.Clamp(
             currentHealth - damage, 0, maxHealth
@@ -33,6 +57,15 @@ public class PlayerHealth : MonoBehaviour
             Die();
         }
     }
+
+    public void Kill()
+    {
+        if (isDead) return;
+
+        currentHealth = 0;
+        Die();
+    }
+
 
     void Die()
     {
