@@ -26,15 +26,44 @@ public class PlayerHealth : MonoBehaviour
         {
             case "Runner":
                 maxHealth = 75;
+                healInterval = 2f;
                 break;
 
             case "Normal":
                 maxHealth = 100;
+                healInterval = 2f;
                 break;
 
             case "Tank":
                 maxHealth = 160;
+                healInterval = 2f;
                 break;
+
+            case "Soft":
+                maxHealth = 50;
+                healInterval = 2f;
+                break;
+
+            case "HealthEmpire":
+                maxHealth = 400;
+                healInterval = 10f;
+                break;
+
+            case "Elite":
+                maxHealth = 125;
+                healInterval = 2f;
+                break;
+            case "Vampire":
+                maxHealth = 120;
+                break;
+
+            case "GodSword":
+                maxHealth = 140;
+                break;
+
+            case "Richman":
+                maxHealth = 180;
+                break;  
         }
 
         currentHealth = maxHealth;
@@ -47,6 +76,14 @@ public class PlayerHealth : MonoBehaviour
         // GODMODE: ป้องกันความเสียหายทั่วไป
         if (PlayerPrefs.GetInt("GodModeUnlocked", 0) == 1)
             return;
+
+        if (PlayerPotionEffects.Instance != null)
+        {
+            damage = Mathf.CeilToInt(
+                damage *
+                PlayerPotionEffects.Instance.DamageTakenMultiplier
+            );
+        }
 
         currentHealth = Mathf.Clamp(
             currentHealth - damage, 0, maxHealth
@@ -64,6 +101,10 @@ public class PlayerHealth : MonoBehaviour
 
         currentHealth = 0;
         Die();
+    }
+    public void Heal(int amount)
+    {
+        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
     }
 
 

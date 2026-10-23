@@ -31,6 +31,31 @@ public class PlayerMovement : MonoBehaviour
             case "Tank":
                 moveSpeed = 4f;
                 break;
+
+            case "Soft":
+                moveSpeed = 9f;
+                jumpHeight = 5f;
+                gravity = -10f;
+                break;
+
+            case "HealthEmpire":
+                moveSpeed = 5f;
+                break;
+
+            case "Elite":
+                moveSpeed = 7f;
+                break;
+            case "Vampire":
+                moveSpeed = 6f;
+                break;
+
+            case "GodSword":
+                moveSpeed = 6.5f;
+                break;
+
+            case "Richman":
+                moveSpeed = 8f;
+                break;
         }
 
         if (PlayerPrefs.GetInt("SpeedJumpUnlocked", 0) == 1)
@@ -50,6 +75,10 @@ public class PlayerMovement : MonoBehaviour
         {
             velocity.y = -2f;
         }
+        PlayerStun stun = GetComponent<PlayerStun>();
+
+        if (stun != null && stun.IsStunned)
+            return;
 
         // เดินด้วย WASD
         float x = Input.GetAxisRaw("Horizontal");
@@ -73,9 +102,19 @@ public class PlayerMovement : MonoBehaviour
         velocity.y += gravity * Time.deltaTime;
 
         // รวมการเดินและกระโดด
-        Vector3 finalMove =
-            move * moveSpeed + velocity;
+        float potionSpeedMultiplier = 1f;
 
+        if (PlayerPotionEffects.Instance != null)
+        {
+            potionSpeedMultiplier =
+                PlayerPotionEffects.Instance.SpeedMultiplier;
+        }
+
+
+        Vector3 finalMove =
+            move * moveSpeed * potionSpeedMultiplier + velocity;
+
+        // สั่งให้ตัวละครเคลื่อนที่จริง
         controller.Move(finalMove * Time.deltaTime);
     }
 }
