@@ -1,22 +1,19 @@
-
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 public class PlayerCombat : MonoBehaviour
 {
-    [Header("References")]
     public Camera playerCamera;
     public Transform sword;
 
-    [Header("Sword Settings")]
     public int swordDamage = 25;
     public float attackRange = 3f;
     public float attackCooldown = 0.5f;
     public float swingDuration = 0.25f;
 
-    [Header("Swing Animation")]
-    public Vector3 swingRotation = new Vector3(-70f, 70f, 0f);
+    public Vector3 swingRotation =
+        new Vector3(-70f, 70f, 0f);
 
     private bool canAttack = true;
     private Quaternion swordStartRotation;
@@ -55,7 +52,8 @@ public class PlayerCombat : MonoBehaviour
             float elapsed = 0f;
 
             Quaternion targetRotation =
-                swordStartRotation * Quaternion.Euler(swingRotation);
+                swordStartRotation *
+                Quaternion.Euler(swingRotation);
 
             while (elapsed < swingDuration / 2f)
             {
@@ -100,12 +98,11 @@ public class PlayerCombat : MonoBehaviour
 
     private void DealSwordDamage()
     {
-        Transform originTransform = playerCamera != null
-            ? playerCamera.transform
-            : transform;
+        Transform origin = playerCamera != null
+            ? playerCamera.transform : transform;
 
-        Vector3 center = originTransform.position
-            + originTransform.forward * (attackRange * 0.55f);
+        Vector3 center = origin.position +
+            origin.forward * (attackRange * 0.55f);
 
         Collider[] hits = Physics.OverlapSphere(center, 1.5f);
 
@@ -121,48 +118,65 @@ public class PlayerCombat : MonoBehaviour
                 continue;
 
             Vector3 direction =
-                zombie.transform.position - originTransform.position;
+                zombie.transform.position - origin.position;
 
             if (direction.sqrMagnitude > 0.001f &&
-                Vector3.Angle(originTransform.forward, direction) > 70f)
+                Vector3.Angle(origin.forward, direction) > 70f)
                 continue;
 
             hitZombies.Add(zombie);
 
-            int finalDamage = swordDamage;
+            float damageMultiplier = 1f;
 
             if (PlayerPotionEffects.Instance != null)
             {
-                finalDamage = Mathf.RoundToInt(
-                    swordDamage *
-                    PlayerPotionEffects.Instance.DamageMultiplier);
+                damageMultiplier *=
+                    PlayerPotionEffects.Instance.DamageMultiplier;
             }
 
-            // สำคัญ: เรียกฟังก์ชันลดเลือดของ Zombie
-            zombie.TakeDamage(finalDamage);
+            PlayerClassSystem classSystem =
+            GetComponentInParent<PlayerClassSystem>();
+
+            if (classSystem == null)
+                classSystem = GetComponentInChildren<PlayerClassSystem>();
+
+            if (classSystem == null)
+                classSystem = PlayerClassSystem.Instance;
+
+            if (classSystem != null)
+                damageMultiplier *= classSystem.DamageMultiplier;
+
+            int finalDamage = Mathf.Max(
+                1, Mathf.RoundToInt(swordDamage * damageMultiplier));
+
+            // ส่งผู้เล่นที่โจมตีไปด้วย
+            PlayerClassSystem ownerClassSystem =
+    GetComponentInParent<PlayerClassSystem>();
+
+            if (ownerClassSystem == null)
+                ownerClassSystem = GetComponentInChildren<PlayerClassSystem>();
+
+            if (ownerClassSystem == null)
+                ownerClassSystem = PlayerClassSystem.Instance;
+
+            GameObject attackerObject = ownerClassSystem != null
+                ? ownerClassSystem.gameObject
+                : gameObject;
+
+            zombie.TakeDamage(finalDamage, attackerObject);
 
             Debug.Log("Sword hit Zombie! Damage: " + finalDamage);
 
-            // Vampire ดูดเลือดคืน 5% ของดาเมจ
-            string selectedClass =
-                PlayerPrefs.GetString("SelectedClass", "Normal");
-
-            if (selectedClass == "Vampire")
+            if (PlayerPrefs.GetString(
+                "SelectedClass", "Normal") == "Vampire")
             {
                 int healAmount =
                     Mathf.FloorToInt(finalDamage * 0.05f);
 
-                PlayerHealth playerHealth =
-                    GetComponent<PlayerHealth>();
+                PlayerHealth health = GetComponent<PlayerHealth>();
 
-                if (playerHealth == null)
-                    playerHealth = GetComponentInChildren<PlayerHealth>();
-
-                if (playerHealth != null && healAmount > 0)
-                {
-                    playerHealth.Heal(healAmount);
-                    Debug.Log("Vampire lifesteal: +" + healAmount + " HP");
-                }
+                if (health != null && healAmount > 0)
+                    health.Heal(healAmount);
             }
         }
     }

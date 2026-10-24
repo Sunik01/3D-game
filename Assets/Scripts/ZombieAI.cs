@@ -33,7 +33,7 @@ public class ZombieAI : MonoBehaviour
 
         if (agent == null)
         {
-            Debug.LogError("Zombie ต้องมี NavMeshAgent!", this);
+            Debug.LogError("Zombie ?????? NavMeshAgent!", this);
             enabled = false;
             return;
         }
@@ -72,7 +72,7 @@ public class ZombieAI : MonoBehaviour
 
         if (!agent.isOnNavMesh)
             return;
-        // Push Zombie มีหน้าที่สตั๊นเท่านั้น ไม่โจมตีทำดาเมจ
+        // Push Zombie ?????????????????????? ???????????????
         if (stunOnly)
         {
             if (agent.isOnNavMesh)
@@ -99,7 +99,7 @@ public class ZombieAI : MonoBehaviour
 
         float distance = direction.magnitude;
 
-        // ผู้เล่นอยู่นอกระยะตรวจจับ: หยุดไล่ตาม
+        // ?????????????????????????: ??????????
         if (distance > detectionRange)
         {
             agent.isStopped = true;
@@ -107,7 +107,7 @@ public class ZombieAI : MonoBehaviour
             return;
         }
 
-        // ผู้เล่นอยู่ในระยะ: หันหน้าเข้าหา
+        // ?????????????????: ?????????????
         if (direction.sqrMagnitude > 0.001f)
         {
             Quaternion targetRotation =
@@ -120,13 +120,13 @@ public class ZombieAI : MonoBehaviour
             );
         }
 
-        // ยังไกลเกินระยะโจมตี: ไล่ตาม
+        // ???????????????????: ??????
         if (distance > attackDistance)
         {
             agent.isStopped = false;
             agent.SetDestination(player.position);
         }
-        // เข้าใกล้แล้ว: หยุดเดินและโจมตี
+        // ????????????: ????????????????
         else
         {
             agent.isStopped = true;
@@ -163,7 +163,7 @@ public class ZombieAI : MonoBehaviour
         if (!stunOnly)
             return;
 
-        // รองรับกรณี Collider อยู่บนลูกของ Player
+        // ?????????? Collider ???????????? Player
         if (!other.CompareTag("Player") &&
             other.transform.root.CompareTag("Player") == false)
             return;
@@ -181,4 +181,3 @@ public class ZombieAI : MonoBehaviour
         }
     }
 }
-

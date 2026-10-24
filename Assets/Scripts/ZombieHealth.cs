@@ -5,9 +5,7 @@ using UnityEngine.UI;
 public class ZombieHealth : MonoBehaviour
 {
     public int maxHealth = 100;
-    public int currentHealth;
-
-    [Header("Money Drop")]
+    public int currentHealth = 100;
     public int dropMoney = 10;
 
     private bool isDead;
@@ -17,7 +15,6 @@ public class ZombieHealth : MonoBehaviour
     private Image healthLost;
     private Renderer[] renderersToCheck;
     private float topOffset = 0.5f;
-
 
     private void Awake()
     {
@@ -31,33 +28,41 @@ public class ZombieHealth : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (healthCanvas == null) return;
+        if (healthCanvas == null)
+            return;
 
-        // ติดตามตำแหน่งเหนือหัวซอมบี้
         float highestY = transform.position.y + topOffset;
 
         foreach (Renderer r in renderersToCheck)
         {
             if (r != null && r.enabled)
-                highestY = Mathf.Max(highestY, r.bounds.max.y + 0.35f);
+                highestY = Mathf.Max(
+                    highestY, r.bounds.max.y + 0.35f);
         }
 
         healthCanvas.transform.position =
-            new Vector3(transform.position.x, highestY, transform.position.z);
+            new Vector3(
+                transform.position.x,
+                highestY,
+                transform.position.z);
 
-        // หันหลอดเลือดเข้าหากล้อง
         if (mainCamera == null)
             mainCamera = Camera.main;
 
         if (mainCamera != null)
-            healthCanvas.transform.rotation = Quaternion.LookRotation(
-                healthCanvas.transform.position - mainCamera.transform.position
-            );
+        {
+            healthCanvas.transform.rotation =
+                Quaternion.LookRotation(
+                    healthCanvas.transform.position -
+                    mainCamera.transform.position);
+        }
     }
 
     private void CreateHealthBar()
     {
-        GameObject canvasObject = new GameObject("ZombieHealthBar");
+        GameObject canvasObject =
+            new GameObject("ZombieHealthBar");
+
         healthCanvas = canvasObject.AddComponent<Canvas>();
         healthCanvas.renderMode = RenderMode.WorldSpace;
         canvasObject.AddComponent<CanvasScaler>();
@@ -68,7 +73,6 @@ public class ZombieHealth : MonoBehaviour
         canvasRect.sizeDelta = new Vector2(100, 12);
         canvasRect.localScale = Vector3.one * 0.01f;
 
-        // พื้นหลังสีแดง แสดงส่วนที่เสียเลือด
         GameObject redObject = new GameObject("HealthLost");
         redObject.transform.SetParent(canvasObject.transform, false);
 
@@ -81,7 +85,6 @@ public class ZombieHealth : MonoBehaviour
         redRect.offsetMin = Vector2.zero;
         redRect.offsetMax = Vector2.zero;
 
-        // แถบสีเขียว แสดงเลือดที่เหลือ
         GameObject greenObject = new GameObject("HealthFill");
         greenObject.transform.SetParent(canvasObject.transform, false);
 
@@ -89,52 +92,55 @@ public class ZombieHealth : MonoBehaviour
         healthFill.color = Color.green;
 
         RectTransform greenRect = healthFill.rectTransform;
-        greenRect.anchorMin = new Vector2(0, 0);
-        greenRect.anchorMax = new Vector2(1, 1);
+        greenRect.anchorMin = Vector2.zero;
+        greenRect.anchorMax = Vector2.one;
         greenRect.pivot = new Vector2(0, 0.5f);
         greenRect.offsetMin = Vector2.zero;
         greenRect.offsetMax = Vector2.zero;
     }
 
-    public void TakeDamage(int damage)
+    public void TakeDamage(int damage, GameObject attacker = null)
     {
-        if (isDead) return;
+        if (isDead || damage <= 0)
+            return;
 
-        currentHealth = Mathf.Clamp(currentHealth - damage, 0, maxHealth);
+        currentHealth = Mathf.Clamp(
+            currentHealth - damage, 0, maxHealth);
 
         UpdateHealthBar();
 
         DamagePopup.Create(
             transform.position + Vector3.up * 1.5f,
-            "-" + damage
-        );
-
-        Debug.Log("Zombie HP: " + currentHealth);
+            "-" + damage);
 
         if (currentHealth <= 0)
-            Die();
+            Die(attacker);
     }
 
     private void UpdateHealthBar()
     {
-        if (healthFill == null) return;
+        if (healthFill == null)
+            return;
 
-        float healthPercent = maxHealth > 0
+        float percent = maxHealth > 0
             ? Mathf.Clamp01((float)currentHealth / maxHealth)
             : 0f;
 
-        // ลดความกว้างของแถบสีเขียวตามเลือดที่เหลือ
-        RectTransform fillRect = healthFill.rectTransform;
-        fillRect.anchorMax = new Vector2(healthPercent, 1f);
-        fillRect.offsetMin = Vector2.zero;
-        fillRect.offsetMax = Vector2.zero;
+        RectTransform rect = healthFill.rectTransform;
+        rect.anchorMax = new Vector2(percent, 1f);
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
     }
 
-    private void Die()
+
+    private void Die(GameObject attacker)
     {
-        if (isDead) return;
+        if (isDead)
+            return;
+
         isDead = true;
 
+        // ให้เงินเมื่อซอมบี้ตาย
         if (MoneyManager.Instance != null)
         {
             int reward = dropMoney;
@@ -147,9 +153,38 @@ public class ZombieHealth : MonoBehaviour
             MoneyManager.Instance.AddMoney(reward);
         }
 
+        // ค้นหาระบบคลาสจากตัวผู้โจมตี
+        PlayerClassSystem classSystem = null;
+
+        if (attacker != null)
+        {
+            classSystem = attacker.GetComponent<PlayerClassSystem>();
+
+            if (classSystem == null)
+                classSystem = attacker.GetComponentInParent<PlayerClassSystem>();
+
+            if (classSystem == null)
+                classSystem = attacker.GetComponentInChildren<PlayerClassSystem>();
+        }
+
+        // เกมเล่นคนเดียว: ใช้ระบบคลาสของผู้เล่นเป็นตัวสำรอง
+        if (classSystem == null)
+            classSystem = PlayerClassSystem.Instance;
+
+        if (classSystem != null)
+        {
+            classSystem.RegisterZombieKill();
+        }
+        else
+        {
+            Debug.LogWarning(
+                "ไม่พบ PlayerClassSystem ตอนซอมบี้ตาย!");
+        }
+
         if (healthCanvas != null)
             Destroy(healthCanvas.gameObject);
 
         Destroy(gameObject);
     }
+
 }

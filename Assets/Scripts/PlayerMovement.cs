@@ -10,13 +10,14 @@ public class PlayerMovement : MonoBehaviour
 
     private CharacterController controller;
     private Vector3 velocity;
+    private string selectedClass;
 
-    void Start()
+    private void Start()
     {
         controller = GetComponent<CharacterController>();
 
-        string selectedClass =
-            PlayerPrefs.GetString("SelectedClass", "Normal");
+        selectedClass = PlayerPrefs.GetString(
+            "SelectedClass", "Normal");
 
         switch (selectedClass)
         {
@@ -45,6 +46,7 @@ public class PlayerMovement : MonoBehaviour
             case "Elite":
                 moveSpeed = 7f;
                 break;
+
             case "Vampire":
                 moveSpeed = 6f;
                 break;
@@ -56,6 +58,18 @@ public class PlayerMovement : MonoBehaviour
             case "Richman":
                 moveSpeed = 8f;
                 break;
+
+            case "MazeRunner":
+                moveSpeed = 10f;
+                break;
+
+            case "Reaper":
+                moveSpeed = 6f;
+                break;
+
+            case "Magician":
+                moveSpeed = 7.5f;
+                break;
         }
 
         if (PlayerPrefs.GetInt("SpeedJumpUnlocked", 0) == 1)
@@ -63,24 +77,23 @@ public class PlayerMovement : MonoBehaviour
             moveSpeed = 20f;
             jumpHeight = 8f;
         }
-
     }
 
-    void Update()
+    private void Update()
     {
-        // ตรวจสอบพื้นก่อน
-        bool grounded = controller.isGrounded;
+        if (controller == null)
+            return;
 
-        if (grounded && velocity.y < 0f)
-        {
-            velocity.y = -2f;
-        }
         PlayerStun stun = GetComponent<PlayerStun>();
 
         if (stun != null && stun.IsStunned)
             return;
 
-        // เดินด้วย WASD
+        bool grounded = controller.isGrounded;
+
+        if (grounded && velocity.y < 0f)
+            velocity.y = -2f;
+
         float x = Input.GetAxisRaw("Horizontal");
         float z = Input.GetAxisRaw("Vertical");
 
@@ -90,31 +103,63 @@ public class PlayerMovement : MonoBehaviour
 
         move = Vector3.ClampMagnitude(move, 1f);
 
-        // กระโดดด้วย Spacebar
         if (grounded && Input.GetKeyDown(KeyCode.Space))
         {
             velocity.y = Mathf.Sqrt(
-                jumpHeight * -2f * gravity
-            );
+                jumpHeight * -2f * gravity);
         }
 
-        // แรงโน้มถ่วง
         velocity.y += gravity * Time.deltaTime;
 
-        // รวมการเดินและกระโดด
-        float potionSpeedMultiplier = 1f;
+        // โบนัสความเร็วจากน้ำยา
+        float potionMultiplier = 1f;
 
         if (PlayerPotionEffects.Instance != null)
         {
-            potionSpeedMultiplier =
+            potionMultiplier =
                 PlayerPotionEffects.Instance.SpeedMultiplier;
         }
 
+        // ค้นหาระบบคลาสของผู้เล่น
+        PlayerClassSystem classSystem =
+            GetComponent<PlayerClassSystem>();
+
+        if (classSystem == null)
+            classSystem = GetComponentInParent<PlayerClassSystem>();
+
+        if (classSystem == null)
+            classSystem = GetComponentInChildren<PlayerClassSystem>();
+
+        if (classSystem == null)
+            classSystem = PlayerClassSystem.Instance;
+
+        // โบนัสความเร็ว Reaper ตามจำนวน Kill
+        float reaperBonus = 0f;
+
+        if (classSystem != null)
+            reaperBonus = classSystem.SpeedBonus;
+
+        // โบนัสความเร็วจาก Magician
+        MagicianSpellController magician =
+            GetComponent<MagicianSpellController>();
+
+        if (magician == null)
+            magician = GetComponentInChildren<MagicianSpellController>();
+
+        float magicianSpeedMultiplier = 1f;
+
+        if (magician != null)
+            magicianSpeedMultiplier = magician.SpeedMultiplier;
+
+        // คำนวณการเคลื่อนที่
+        float finalSpeed =
+            (moveSpeed + reaperBonus) *
+            potionMultiplier *
+            magicianSpeedMultiplier;
 
         Vector3 finalMove =
-            move * moveSpeed * potionSpeedMultiplier + velocity;
+            move * finalSpeed + velocity;
 
-        // สั่งให้ตัวละครเคลื่อนที่จริง
         controller.Move(finalMove * Time.deltaTime);
     }
 }

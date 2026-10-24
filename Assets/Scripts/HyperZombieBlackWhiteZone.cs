@@ -56,7 +56,8 @@ public class HyperZombieBlackWhiteZone : MonoBehaviour
 
                     if (damageTimer >= damageInterval)
                     {
-                        playerHealth.TakeDamage(Mathf.RoundToInt(damage));
+                        playerHealth.TakeHyperZoneDamage(
+                        Mathf.RoundToInt(damage));
                         damageTimer = 0f;
                     }
                 }
