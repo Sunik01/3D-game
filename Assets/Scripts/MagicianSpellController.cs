@@ -126,7 +126,7 @@ public class MagicianSpellController : MonoBehaviour
     }
 
     private IEnumerator CastRing()
-    {
+    {   
         GameObject visual = CreateRingVisual(transform, ringRadius, Color.cyan, 0.08f);
         float elapsed = 0f;
         float damageTimer = 0f;
@@ -140,12 +140,111 @@ public class MagicianSpellController : MonoBehaviour
                 Collider[] hits = Physics.OverlapSphere(transform.position, ringRadius);
                 HashSet<ZombieHealth> damaged = new HashSet<ZombieHealth>();
 
+                HashSet<ZombieHealth> damagedZombies = new HashSet<ZombieHealth>();
+                HashSet<BossHealth> damagedBosses = new HashSet<BossHealth>();
+
                 foreach (Collider hit in hits)
                 {
-                    ZombieHealth zombie = hit.GetComponentInParent<ZombieHealth>();
-                    if (zombie == null || !damaged.Add(zombie))
+                    BossHealth boss = hit.GetComponentInParent<BossHealth>();
+
+                    if (boss != null)
+                    {
+                        if (damagedBosses.Add(boss))
+                            boss.TakeDamage(ringDamage);
+
                         continue;
-                    zombie.TakeDamage(ringDamage, gameObject);
+                    }
+
+                    ZombieHealth zombie = hit.GetComponentInParent<ZombieHealth>();
+
+                    if (zombie != null && damagedZombies.Add(zombie))
+                        zombie.TakeDamage(ringDamage, gameObject);
+                }
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (visual != null)
+        {
+
+        }
+            Destroy(visual);
+    }
+
+    private void CastRangedZone()
+    {
+        Collider[] hits = Physics.OverlapSphere(
+    transform.position, castRange);
+
+        HashSet<ZombieHealth> nearbyZombies = new HashSet<ZombieHealth>();
+        HashSet<BossHealth> nearbyBosses = new HashSet<BossHealth>();
+
+        foreach (Collider hit in hits)
+        {
+            BossHealth boss = hit.GetComponentInParent<BossHealth>();
+
+            if (boss != null)
+            {
+                if (nearbyBosses.Add(boss))
+                    StartCoroutine(RangedBossDamageRoutine(boss));
+
+                continue;
+            }
+
+            ZombieHealth zombie = hit.GetComponentInParent<ZombieHealth>();
+
+            if (zombie != null && nearbyZombies.Add(zombie))
+                StartCoroutine(RangedDamageRoutine(zombie));
+        }
+
+        Debug.Log(nearbyZombies.Count == 0
+            ? "X: ไม่มีซอมบี้อยู่ในระยะสกิล"
+            : "X: สร้างวงเวทใส่ซอมบี้ " + nearbyZombies.Count + " ตัว");
+    }
+
+    private IEnumerator RangedBossDamageRoutine(BossHealth target)
+    {
+        if (target == null)
+            yield break;
+
+        Vector3 origin =
+            target.transform.position + Vector3.up * groundRayHeight;
+
+        Vector3 groundPosition;
+
+        if (Physics.Raycast(origin, Vector3.down,
+            out RaycastHit hit, groundRayDistance,
+            groundLayers, QueryTriggerInteraction.Ignore))
+        {
+            groundPosition = hit.point + Vector3.up * groundOffset;
+        }
+        else
+        {
+            groundPosition =
+                target.transform.position + Vector3.up * groundOffset;
+        }
+
+        GameObject visual = CreateGroundZone(
+            groundPosition, zoneRadius, Color.magenta, 0.12f);
+
+        float elapsed = 0f;
+        float timer = 0f;
+
+        while (elapsed < zoneDuration && target != null)
+        {
+            timer += Time.deltaTime;
+
+            if (timer >= Mathf.Max(0.05f, zoneTick))
+            {
+                timer = 0f;
+
+                if (Vector3.Distance(
+                    target.transform.position, groundPosition)
+                    <= zoneRadius + 2f)
+                {
+                    target.TakeDamage(zoneDamage);
                 }
             }
 
@@ -156,25 +255,6 @@ public class MagicianSpellController : MonoBehaviour
         if (visual != null)
             Destroy(visual);
     }
-
-    private void CastRangedZone()
-    {
-        Collider[] hits = Physics.OverlapSphere(transform.position, castRange);
-        HashSet<ZombieHealth> nearbyZombies = new HashSet<ZombieHealth>();
-
-        foreach (Collider hit in hits)
-        {
-            ZombieHealth zombie = hit.GetComponentInParent<ZombieHealth>();
-            if (zombie == null || !nearbyZombies.Add(zombie))
-                continue;
-            StartCoroutine(RangedDamageRoutine(zombie));
-        }
-
-        Debug.Log(nearbyZombies.Count == 0
-            ? "X: ไม่มีซอมบี้อยู่ในระยะสกิล"
-            : "X: สร้างวงเวทใส่ซอมบี้ " + nearbyZombies.Count + " ตัว");
-    }
-
     private IEnumerator RangedDamageRoutine(ZombieHealth target)
     {
         if (target == null)

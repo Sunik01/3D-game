@@ -56,6 +56,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        Debug.Log("[PlayerHealth] TakeDamage called: " + damage);
         ApplyDamage(damage, false, false);
     }
 
@@ -82,7 +83,10 @@ public class PlayerHealth : MonoBehaviour
             return;
 
         if (PlayerPrefs.GetInt("GodModeUnlocked", 0) == 1)
+        {
+            Debug.LogWarning("[PlayerHealth] God Mode is blocking damage!");
             return;
+        }
 
         // Maze Runner ลดดาเมจจากกับดัก 80%
         // ไม่คูณซ้ำกับน้ำยาต้านความเสียหาย

@@ -35,15 +35,14 @@ public class EnergyOrb : MonoBehaviour
         MoneyManager.Instance.AddMoney(reward);
 
         EnergyOrbSpawner spawner =
-            FindFirstObjectByType<EnergyOrbSpawner>();
+    FindFirstObjectByType<EnergyOrbSpawner>();
 
         if (spawner != null)
         {
             spawner.CollectOrb(gameObject);
         }
-        else
-        {
-            Destroy(gameObject);
-        }
+
+        Destroy(gameObject);
     }
+    
 }
